@@ -1,0 +1,8 @@
+[package]
+name = "vasp-rust"
+version = "0.1.0"
+authors = ["yaosikai <1165524245@qq.com>"]
+
+[dependencies]
+regex = "1"
+itertools = "0.7.3"
