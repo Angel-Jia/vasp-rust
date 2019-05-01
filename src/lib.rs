@@ -11,14 +11,14 @@ use itertools::Itertools;
 
 
 pub struct Data{
-    lattice: f64,
-    basis: Vec<(f64, f64, f64)>,
-    elements: Vec<String>,
-    num_atoms: Vec<u64>,
-    selectiveflag: String,
-    coordinate_type: String,
-    coordinates: Vec<(f64, f64, f64)>,
-    selective: Vec<(char, char, char)>,
+    pub lattice: f64,
+    pub basis: Vec<(f64, f64, f64)>,
+    pub elements: Vec<String>,
+    pub num_atoms: Vec<u64>,
+    pub selectiveflag: String,
+    pub coordinate_type: String,
+    pub coordinates: Vec<(f64, f64, f64)>,
+    pub selective: Vec<(char, char, char)>,
 }
 
 
@@ -38,7 +38,7 @@ impl Data{
 
     pub fn read_vasp(&mut self, file_name: &str){
 
-        let f = File::open(file_name).expect("Unable to open file");
+        let f = File::open(file_name).expect(&format!("Unable to open file: {}", file_name));
         let f = BufReader::new(f);
 
         let input_file = f.lines().map(|line| line.unwrap()).collect::<Vec<String>>();
@@ -94,7 +94,7 @@ impl Data{
 
     pub fn write_vasp(&self, file_name: &str){
 
-        let f = File::create(file_name).expect("Unable to write file");
+        let f = File::create(file_name).expect(&format!("Unable to write file: {}", file_name));
         let mut output = BufWriter::new(f);
         output.write(format!("{:.3}\n", self.elements.iter().format("  ")).as_bytes());
         output.write(format!("  {:>15.10}\n", self.lattice).as_bytes());
@@ -124,7 +124,7 @@ impl Data{
     }
 
     pub fn read_gjf(&mut self, file_name: &str){
-        let f = File::open(file_name).expect("Unable to open file");
+        let f = File::open(file_name).expect(&format!("Unable to open file: {}", file_name));
         let input_file = BufReader::new(f).lines().map(|s| s.unwrap()).collect::<Vec<String>>();
 
         let pattern = Regex::new(r"[0-9]+\s+[0-9]+").unwrap(); //spin multiplicity in .gjf
@@ -203,15 +203,18 @@ impl Data{
     pub fn write_xyz(&self, file_name: &str){
         let f = File::create(file_name).expect("Unable to write file");
         let mut output = BufWriter::new(f);
-        let total_num = self.num_atoms.iter().sum::<u64>();
-        output.write(format!("{}\n", total_num).as_bytes());
-        output.write(b"creat from vasp file\n");
-        let mut total_index = 0;
-        for (i, ele) in self.elements.iter().enumerate(){
-            for j in 0..self.num_atoms[i]{
-                output.write(format!("{:>2}    {:>15.10}  {:>15.10}  {:>15.10}\n", ele,
-                        self.coordinates[total_index].0, self.coordinates[total_index].1, self.coordinates[total_index].2).as_bytes());
-                total_index += 1;
+        let total_num = self.num_atoms.iter().sum::<u64>() as usize;
+        let mut total_index: usize = 0;
+
+        while total_index + total_num <= self.coordinates.len(){
+            output.write(format!("{}\n", total_num).as_bytes());
+            output.write(b"creat from rust\n");
+            for (i, ele) in self.elements.iter().enumerate(){
+                for j in 0..self.num_atoms[i]{
+                    output.write(format!("{:>2}    {:>15.10}  {:>15.10}  {:>15.10}\n", ele,
+                            self.coordinates[total_index].0, self.coordinates[total_index].1, self.coordinates[total_index].2).as_bytes());
+                    total_index += 1;
+                }
             }
         }
         output.write(b"\n");
