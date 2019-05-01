@@ -1,7 +1,7 @@
 #[macro_use] extern crate itertools;
 extern crate regex;
 
-use std::io::{BufRead,BufReader};
+use std::io::{BufReader, BufWriter};
 use std::io::prelude::*;
 use std::fs::File;
 use std::process::Command;
@@ -94,16 +94,17 @@ impl Data{
 
     pub fn write_vasp(&self, file_name: &str){
 
-        let mut f = File::create(file_name).expect("Unable to write file");
-        f.write(format!("{:.3}\n", self.elements.iter().format("  ")).as_bytes());
-        f.write(format!("  {:>15.10}\n", self.lattice).as_bytes());
+        let f = File::create(file_name).expect("Unable to write file");
+        let mut output = BufWriter::new(f);
+        output.write(format!("{:.3}\n", self.elements.iter().format("  ")).as_bytes());
+        output.write(format!("  {:>15.10}\n", self.lattice).as_bytes());
         for i in 0..3{
-            f.write(format!("  {:>15.10}  {:>15.10}  {:>15.10}\n", self.basis[i].0, self.basis[i].1, self.basis[i].2).as_bytes());
+            output.write(format!("  {:>15.10}  {:>15.10}  {:>15.10}\n", self.basis[i].0, self.basis[i].1, self.basis[i].2).as_bytes());
         }
-        f.write(format!("{:.3}\n", self.elements.iter().format("  ")).as_bytes());
-        f.write(format!("{:.3}\n", self.num_atoms.iter().format("  ")).as_bytes());
-        if self.selectiveflag != "" {f.write(format!("{}\n", self.selectiveflag).as_bytes());}
-        f.write(format!("{}\n", self.coordinate_type).as_bytes());
+        output.write(format!("{:.3}\n", self.elements.iter().format("  ")).as_bytes());
+        output.write(format!("{:.3}\n", self.num_atoms.iter().format("  ")).as_bytes());
+        if self.selectiveflag != "" {output.write(format!("{}\n", self.selectiveflag).as_bytes());}
+        output.write(format!("{}\n", self.coordinate_type).as_bytes());
 
         let mut selective = self.selective.clone();;
         if self.selectiveflag != "" && self.coordinates.len() > self.selective.len(){
@@ -114,10 +115,10 @@ impl Data{
         }
 
         for (i, coord) in self.coordinates.iter().enumerate(){
-            f.write(format!("  {:>15.10}  {:>15.10}  {:>15.10}", coord.0, coord.1, coord.2).as_bytes());
+            output.write(format!("  {:>15.10}  {:>15.10}  {:>15.10}", coord.0, coord.1, coord.2).as_bytes());
             match self.selectiveflag.as_str() {
-                "" => f.write(b"\n"),
-                _ => f.write(format!(" {} {} {}\n", selective[i].0, selective[i].1, selective[i].2).as_bytes()),
+                "" => output.write(b"\n"),
+                _ => output.write(format!(" {} {} {}\n", selective[i].0, selective[i].1, selective[i].2).as_bytes()),
             };
         }
     }
@@ -162,19 +163,20 @@ impl Data{
     }
 
     pub fn write_gjf(&self, file_name: &str){
-        let mut f = File::create(file_name).expect("Unable to write file");
-        f.write(b"# opt freq b3lyp/6-31g\n\n");
-        f.write(b"creat from vasp file\n\n");
-        f.write(b"0 1\n");
+        let f = File::create(file_name).expect("Unable to write file");
+        let mut output = BufWriter::new(f);
+        output.write(b"# opt freq b3lyp/6-31g\n\n");
+        output.write(b"creat from vasp file\n\n");
+        output.write(b"0 1\n");
         let mut total_index = 0;
         for (i, ele) in self.elements.iter().enumerate(){
             for j in 0..self.num_atoms[i]{
-                f.write(format!("{:>2}    {:>15.10}  {:>15.10}  {:>15.10}\n", ele,
+                output.write(format!("{:>2}    {:>15.10}  {:>15.10}  {:>15.10}\n", ele,
                         self.coordinates[total_index].0, self.coordinates[total_index].1, self.coordinates[total_index].2).as_bytes());
                 total_index += 1;
             }
         }
-        f.write(b"\n");
+        output.write(b"\n");
     }
 
     pub fn read_xyz(&mut self, file_name: &str){
@@ -199,19 +201,20 @@ impl Data{
     }
 
     pub fn write_xyz(&self, file_name: &str){
-        let mut f = File::create(file_name).expect("Unable to write file");
+        let f = File::create(file_name).expect("Unable to write file");
+        let mut output = BufWriter::new(f);
         let total_num = self.num_atoms.iter().sum::<u64>();
-        f.write(format!("{}\n", total_num).as_bytes());
-        f.write(b"creat from vasp file\n");
+        output.write(format!("{}\n", total_num).as_bytes());
+        output.write(b"creat from vasp file\n");
         let mut total_index = 0;
         for (i, ele) in self.elements.iter().enumerate(){
             for j in 0..self.num_atoms[i]{
-                f.write(format!("{:>2}    {:>15.10}  {:>15.10}  {:>15.10}\n", ele,
+                output.write(format!("{:>2}    {:>15.10}  {:>15.10}  {:>15.10}\n", ele,
                         self.coordinates[total_index].0, self.coordinates[total_index].1, self.coordinates[total_index].2).as_bytes());
                 total_index += 1;
             }
         }
-        f.write(b"\n");
+        output.write(b"\n");
     }
 }
 
