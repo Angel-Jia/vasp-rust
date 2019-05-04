@@ -2,7 +2,7 @@ extern crate vasp_rust;
 
 use std::env;
 use std::fs::File;
-use std::io::{BufReader, BufWriter};
+use std::io::BufReader;
 use std::io::prelude::*;
 
 fn read_freq(file_name: &str) -> (Vec<(f64, f64, f64)>, Vec<(f64, f64, f64)>){
